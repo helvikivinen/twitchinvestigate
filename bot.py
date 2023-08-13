@@ -21,31 +21,34 @@ commandlist = [
     command_prefix + "setpoints",
 ]
 
-def IncrementPoints(users):
-    session = Session()
-    for user in users:
-        found_user = session.query(Viewer).filter(Viewer.twitch_id == user.id).scalar()
-        if found_user is not None:
-            print(f"Incrementing Point for {user.name}")
-            found_user.channel_points += 1
-            session.query(Viewer).filter(Viewer.twitch_id == user.id).update(
-                {"channel_points": found_user.channel_points}
-            )
-        else:
-            print(f"Record could not be found for {user.name}")            
 
-    session.commit()
+def IncrementPoints(users):
+    print(f"Users found: {users}")
+    for user in users:
+        new_viewer = insert_user_if_not_exists(user.id, user.name)
+        session = Session()
+        print(f"Incrementing Point for {user.name}")
+        new_viewer.channel_points += 1
+        session.query(Viewer).filter(Viewer.twitch_id == user.id).update(
+            {"channel_points": new_viewer.channel_points}
+        )
+        session.commit()
+
+
+def user_exists_in_db(twitch_id):
+    session = Session()
+    viewerExists = session.query(Viewer).filter(Viewer.twitch_id == twitch_id).scalar()
+    session.close()
+
+    return viewerExists or False
+
 
 def insert_user_if_not_exists(twitch_id, twitch_name):
     session = Session()
-    print("Session Created")
 
-    viewerExists = session.query(
-        session.query(Viewer).filter(Viewer.twitch_id == twitch_id).exists()
-    ).scalar()
-
-    if viewerExists:
-        return
+    viewer = user_exists_in_db(twitch_id)
+    if viewer:
+        return viewer
     else:
         new_viewer = Viewer(
             twitch_id=twitch_id,
@@ -54,7 +57,9 @@ def insert_user_if_not_exists(twitch_id, twitch_name):
         )
         session.add(new_viewer)
         session.commit()
-    return
+
+        # TODO: figure out how to get the freshly added row without an additional lookup
+        return session.query(Viewer).filter(Viewer.twitch_id == twitch_id).scalar()
 
 
 class Bot(commands.Bot):
@@ -135,28 +140,24 @@ class Bot(commands.Bot):
             {"channel_points": target_points}
         )
         result = session.commit()
-        if result is not None:
-            # reflect what the command-user actually typed in chat by printing `target_user` over `twitch_name`
-            await ctx.send(f"Set {target_user}'s points to {target_points}")
-        else:
-            await ctx.send(f"setpoints failed! no db rows were affected")
+        await ctx.send(f"Set {target_user}'s points to {target_points}")
 
     @commands.command()
     async def repeat(self, ctx: commands.Context):
         # ctx.command.name here does NOT contain the command_prefix
         await ctx.send(f"You used the command: {ctx.command.name}")
 
-    #this runs as an async background task and not a memebr of the bot    
+    # this runs as an async background task and not a memebr of the bot
     @routines.routine(minutes=1)
-    async def get_points():   
-        #get the global bot object, this is equivalent to 'self'
-        if bot._connection.is_alive:     
+    async def get_points():
+        # get the global bot object, this is equivalent to 'self'
+        if bot._connection.is_alive:
             channel_name = os.getenv("CHANNEL_NAME")
             chatters = Channel(channel_name, bot._connection).chatters
             users = []
             for chatter in chatters:
                 users.append(await chatter.user())
-            
+
             IncrementPoints(users)
 
     get_points.start()
