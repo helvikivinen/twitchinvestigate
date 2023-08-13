@@ -26,40 +26,37 @@ def IncrementPoints(users):
     print(f"Users found: {users}")
     for user in users:
         new_viewer = insert_user_if_not_exists(user.id, user.name)
-        session = Session()
-        print(f"Incrementing Point for {user.name}")
-        new_viewer.channel_points += 1
-        session.query(Viewer).filter(Viewer.twitch_id == user.id).update(
-            {"channel_points": new_viewer.channel_points}
-        )
-        session.commit()
+        with Session() as session:
+            print(f"Incrementing Point for {user.name}")
+            new_viewer.channel_points += 1
+            session.query(Viewer).filter(Viewer.twitch_id == user.id).update(
+                {"channel_points": new_viewer.channel_points}
+            )
+            session.commit()
 
 
 def user_exists_in_db(twitch_id):
-    session = Session()
-    viewerExists = session.query(Viewer).filter(Viewer.twitch_id == twitch_id).scalar()
-    session.close()
+    with Session() as session:
+        viewerExists = session.query(Viewer).filter(Viewer.twitch_id == twitch_id).scalar()
 
     return viewerExists or False
 
 
 def insert_user_if_not_exists(twitch_id, twitch_name):
-    session = Session()
+    with Session() as session:  
+        viewer = user_exists_in_db(twitch_id)
+        if viewer:
+            return viewer
+        else:
+            new_viewer = Viewer(
+                twitch_id=twitch_id,
+                twitch_name=twitch_name,
+                channel_points=0,
+            )
+            session.add(new_viewer)
+            session.commit()
 
-    viewer = user_exists_in_db(twitch_id)
-    if viewer:
-        return viewer
-    else:
-        new_viewer = Viewer(
-            twitch_id=twitch_id,
-            twitch_name=twitch_name,
-            channel_points=0,
-        )
-        session.add(new_viewer)
-        session.commit()
-
-        # TODO: figure out how to get the freshly added row without an additional lookup
-        return session.query(Viewer).filter(Viewer.twitch_id == twitch_id).scalar()
+            return new_viewer
 
 
 class Bot(commands.Bot):
@@ -98,20 +95,20 @@ class Bot(commands.Bot):
 
     @commands.command()
     async def hello(self, ctx: commands.Context):
-        session = Session()
-        print("Session Created")
-        viewerExists = session.query(
-            session.query(Viewer).filter(Viewer.twitch_id == ctx.author.id).exists()
-        ).scalar()
+        with Session() as session:  
+            print("Session Created")
+            viewerExists = session.query(
+                session.query(Viewer).filter(Viewer.twitch_id == ctx.author.id).exists()
+            ).scalar()
 
-        if not viewerExists:
-            viewer = Viewer(
-                twitch_id=ctx.author.id,
-                twitch_name=ctx.author.name,
-                channel_points=0,
-            )
-            session.add(viewer)
-            session.commit()
+            if not viewerExists:
+                viewer = Viewer(
+                    twitch_id=ctx.author.id,
+                    twitch_name=ctx.author.name,
+                    channel_points=0,
+                )
+                session.add(viewer)
+                session.commit()
 
         await ctx.send(f"Hello {ctx.author.name}!")
 
@@ -134,12 +131,12 @@ class Bot(commands.Bot):
 
         insert_user_if_not_exists(twitch_id=twitch_id, twitch_name=twitch_name)
 
-        session = Session()
-        print("Session Created")
-        session.query(Viewer).filter(Viewer.twitch_name == twitch_name).update(
-            {"channel_points": target_points}
-        )
-        result = session.commit()
+        with Session() as session:  
+            print("Session Created")
+            session.query(Viewer).filter(Viewer.twitch_name == twitch_name).update(
+                {"channel_points": target_points}
+            )
+            result = session.commit()
         await ctx.send(f"Set {target_user}'s points to {target_points}")
 
     @commands.command()
@@ -148,7 +145,7 @@ class Bot(commands.Bot):
         await ctx.send(f"You used the command: {ctx.command.name}")
 
     # this runs as an async background task and not a memebr of the bot
-    @routines.routine(minutes=1)
+    @routines.routine(seconds=30)
     async def get_points():
         # get the global bot object, this is equivalent to 'self'
         if bot._connection.is_alive:
