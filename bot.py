@@ -26,13 +26,13 @@ def IncrementPoints(users):
     for user in users:
         found_user = session.query(Viewer).filter(Viewer.twitch_id == user.id).scalar()
         if found_user is not None:
-            print(f"Incrementing Point for {user.display_name}")
+            print(f"Incrementing Point for {user.name}")
             found_user.channel_points += 1
             session.query(Viewer).filter(Viewer.twitch_id == user.id).update(
                 {"channel_points": found_user.channel_points}
             )
         else:
-            print(f"Record could not be found for {user.display_name}")            
+            print(f"Record could not be found for {user.name}")            
 
     session.commit()
 
@@ -102,7 +102,7 @@ class Bot(commands.Bot):
         if not viewerExists:
             viewer = Viewer(
                 twitch_id=ctx.author.id,
-                twitch_display_name=ctx.author.display_name,
+                twitch_name=ctx.author.name,
                 channel_points=0,
             )
             session.add(viewer)
@@ -113,7 +113,7 @@ class Bot(commands.Bot):
     @commands.command()
     async def setpoints(self, ctx: commands.Context):
         if not ctx.author.is_mod:
-            print(f"Non mod {ctx.author.display_name} tried to use `setpoints`")
+            print(f"Non mod {ctx.author.name} tried to use `setpoints`")
             return
 
         words = ctx.message.content.split(" ")
