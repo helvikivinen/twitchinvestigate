@@ -1,21 +1,30 @@
 from twitchio.ext import commands
 from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from viewer import Viewer
+
 import os
-import sqlite3
+import viewer
 
 load_dotenv()
 
-db_file = "database.sqlite3"
-print(f"Connecting to `{db_file}`... ", end="")
-db_connection = sqlite3.connect(db_file)
-db_cursor = db_connection.cursor()
-print("connected!\n")
+db_file = "sqlite:///database.sqlite3"
+#print(f"Connecting to `{db_file}`... ", end="")
+#db_connection = sqlite3.connect(db_file)
+#db_cursor = db_connection.cursor()
+#print("connected!\n")
 
+engine = create_engine(db_file, echo=True)
+Session = sessionmaker(bind=engine)
 
 class Bot(commands.Bot):
     def __init__(self):
         apikey = os.getenv("API_KEY")
         channel_name = os.getenv("CHANNEL_NAME")
+        session = Session()
+        
+        result = session.query(Viewer).all()
 
         # Initialise our Bot with our access token, prefix and a list of channels to join on boot...
         # prefix can be a callable, which returns a list of strings or a string...
