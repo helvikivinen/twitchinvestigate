@@ -12,11 +12,12 @@ db_cursor = db_connection.cursor()
 class Bot(commands.Bot):
     def __init__(self):
         apikey = os.getenv("API_KEY")
+        channel_name = os.getenv("CHANNEL_NAME")
 
         # Initialise our Bot with our access token, prefix and a list of channels to join on boot...
         # prefix can be a callable, which returns a list of strings or a string...
         # initial_channels can also be a callable which returns a list of strings...
-        super().__init__(token=apikey, prefix="?", initial_channels=["..."])
+        super().__init__(token=apikey, prefix="?", initial_channels=[channel_name])
 
     async def event_ready(self):
         # Notify us when everything is ready!
