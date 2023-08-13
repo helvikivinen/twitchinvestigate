@@ -14,7 +14,11 @@ db_file = "sqlite:///database.sqlite3"
 engine = create_engine(db_file, echo=True)
 Session = sessionmaker(bind=engine)
 command_prefix = "?"
-commandlist = [command_prefix + "hello", command_prefix + "repeat"]
+commandlist = [
+    command_prefix + "hello",
+    command_prefix + "repeat",
+    command_prefix + "setpoints",
+]
 
 
 class Bot(commands.Bot):
@@ -69,6 +73,27 @@ class Bot(commands.Bot):
             session.commit()
 
         await ctx.send(f"Hello {ctx.author.name}!")
+
+    @commands.command()
+    async def setpoints(self, ctx: commands.Context):
+        if not ctx.author.is_mod:
+            print(f"Non mod {ctx.author.display_name} tried to use `setpoints`")
+            return
+
+        words = ctx.message.content.split(" ")
+        target_user = words[1]
+        target_points = words[2]
+
+        session = Session()
+        print("Session Created")
+        session.query(Viewer).filter(Viewer.twitch_display_name == target_user).update(
+            {"channel_points": target_points}
+        )
+        result = session.commit()
+        if result is not None:
+            await ctx.send(f"Set {target_user}'s points to {target_points}")
+        else:
+            await ctx.send(f"setpoints failed! no db rows were affected")
 
     @commands.command()
     async def repeat(self, ctx: commands.Context):
