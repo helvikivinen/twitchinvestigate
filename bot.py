@@ -36,6 +36,27 @@ def IncrementPoints(users):
 
     session.commit()
 
+def insert_user_if_not_exists(twitch_id, twitch_name):
+    session = Session()
+    print("Session Created")
+
+    viewerExists = session.query(
+        session.query(Viewer).filter(Viewer.twitch_id == twitch_id).exists()
+    ).scalar()
+
+    if viewerExists:
+        return
+    else:
+        new_viewer = Viewer(
+            twitch_id=twitch_id,
+            twitch_name=twitch_name,
+            channel_points=0,
+        )
+        session.add(new_viewer)
+        session.commit()
+    return
+
+
 class Bot(commands.Bot):
     def __init__(self):
         apikey = os.getenv("API_KEY")
@@ -99,13 +120,23 @@ class Bot(commands.Bot):
         target_user = words[1]
         target_points = words[2]
 
+        print(f"Getting user data for {target_user}")
+        fetched_user_list = await bot.fetch_users(names=[target_user])
+        twitch_id = fetched_user_list[0].id
+        twitch_name = fetched_user_list[0].name
+        print(f"> fetched user.id: {twitch_id}")
+        print(f"> fetched user.name: {twitch_name}")
+
+        insert_user_if_not_exists(twitch_id=twitch_id, twitch_name=twitch_name)
+
         session = Session()
         print("Session Created")
-        session.query(Viewer).filter(Viewer.twitch_display_name == target_user).update(
+        session.query(Viewer).filter(Viewer.twitch_name == twitch_name).update(
             {"channel_points": target_points}
         )
         result = session.commit()
         if result is not None:
+            # reflect what the command-user actually typed in chat by printing `target_user` over `twitch_name`
             await ctx.send(f"Set {target_user}'s points to {target_points}")
         else:
             await ctx.send(f"setpoints failed! no db rows were affected")
