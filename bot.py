@@ -10,10 +10,6 @@ import viewer
 load_dotenv()
 
 db_file = "sqlite:///database.sqlite3"
-#print(f"Connecting to `{db_file}`... ", end="")
-#db_connection = sqlite3.connect(db_file)
-#db_cursor = db_connection.cursor()
-#print("connected!\n")
 
 engine = create_engine(db_file, echo=True)
 Session = sessionmaker(bind=engine)
@@ -21,10 +17,7 @@ Session = sessionmaker(bind=engine)
 class Bot(commands.Bot):
     def __init__(self):
         apikey = os.getenv("API_KEY")
-        channel_name = os.getenv("CHANNEL_NAME")
-        session = Session()
-        
-        result = session.query(Viewer).all()
+        channel_name = os.getenv("CHANNEL_NAME")        
 
         # Initialise our Bot with our access token, prefix and a list of channels to join on boot...
         # prefix can be a callable, which returns a list of strings or a string...
@@ -52,12 +45,15 @@ class Bot(commands.Bot):
 
     @commands.command()
     async def hello(self, ctx: commands.Context):
-        # Here we have a command hello, we can invoke our command with our prefix and command name
-        # e.g ?hello
-        # We can also give our commands aliases (different names) to invoke with.
+        session = Session()
+        print("Session Created")        
+        viewerExists = session.query(session.query(Viewer).filter(Viewer.twitch_id == ctx.author.id).exists()).scalar()
 
-        # Send a hello back!
-        # Sending a reply back to the channel is easy... Below is an example.
+        if not viewerExists:
+            viewer = Viewer(twitch_id = ctx.author.id, twitch_display_name = ctx.author.display_name, channel_points = 0)
+            session.add(viewer)
+            session.commit()
+
         await ctx.send(f"Hello {ctx.author.name}!")
 
 
