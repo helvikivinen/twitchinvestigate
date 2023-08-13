@@ -1,0 +1,4 @@
+python-dotenv
+sqlite3
+sqlalchemy
+twitchio
