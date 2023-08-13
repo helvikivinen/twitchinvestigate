@@ -1,4 +1,5 @@
-from twitchio.ext import commands
+from twitchio.ext import commands, routines
+from twitchio import Channel, PartialChatter
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -20,6 +21,20 @@ commandlist = [
     command_prefix + "setpoints",
 ]
 
+def IncrementPoints(users):
+    session = Session()
+    for user in users:
+        found_user = session.query(Viewer).filter(Viewer.twitch_id == user.id).scalar()
+        if found_user is not None:
+            print(f"Incrementing Point for {user.display_name}")
+            found_user.channel_points += 1
+            session.query(Viewer).filter(Viewer.twitch_id == user.id).update(
+                {"channel_points": found_user.channel_points}
+            )
+        else:
+            print(f"Record could not be found for {user.display_name}")            
+
+    session.commit()
 
 class Bot(commands.Bot):
     def __init__(self):
@@ -99,6 +114,21 @@ class Bot(commands.Bot):
     async def repeat(self, ctx: commands.Context):
         # ctx.command.name here does NOT contain the command_prefix
         await ctx.send(f"You used the command: {ctx.command.name}")
+
+    #this runs as an async background task and not a memebr of the bot    
+    @routines.routine(minutes=1)
+    async def get_points():   
+        #get the global bot object, this is equivalent to 'self'
+        if bot._connection.is_alive:     
+            channel_name = os.getenv("CHANNEL_NAME")
+            chatters = Channel(channel_name, bot._connection).chatters
+            users = []
+            for chatter in chatters:
+                users.append(await chatter.user())
+            
+            IncrementPoints(users)
+
+    get_points.start()
 
 
 bot = Bot()
