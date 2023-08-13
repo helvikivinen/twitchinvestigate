@@ -1,8 +1,12 @@
 from twitchio.ext import commands
 from dotenv import load_dotenv
 import os
+import sqlite3
 
 load_dotenv()
+
+db_connection = sqlite3.connect("database.sqlite3")
+db_cursor = db_connection.cursor()
 
 
 class Bot(commands.Bot):
