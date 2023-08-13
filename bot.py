@@ -5,8 +5,11 @@ import sqlite3
 
 load_dotenv()
 
-db_connection = sqlite3.connect("database.sqlite3")
+db_file = "database.sqlite3"
+print(f"Connecting to `{db_file}`... ", end="")
+db_connection = sqlite3.connect(db_file)
 db_cursor = db_connection.cursor()
+print("connected!\n")
 
 
 class Bot(commands.Bot):
