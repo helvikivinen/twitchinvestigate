@@ -1,14 +1,13 @@
 from twitchio.ext import commands, routines
-from twitchio import Channel, PartialChatter
+from twitchio import Channel
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from commandmanager import CommandManager
 from viewer import Viewer
 
 import os
-import viewer
 import random
-import yaml
 
 load_dotenv()
 
@@ -69,6 +68,7 @@ class Bot(commands.Bot):
     def __init__(self):
         apikey = os.getenv("API_KEY")
         channel_name = os.getenv("CHANNEL_NAME")
+        self.Commands = CommandManager()
 
         super().__init__(
             token=apikey, prefix=command_prefix, initial_channels=[channel_name]
@@ -79,6 +79,7 @@ class Bot(commands.Bot):
         # We are logged in and ready to chat and use commands...
         print(f"Logged in as | {self.nick}")
         print(f"User ID is | {self.user_id}")
+        self.Commands.load_commands()
 
     async def event_message(self, message):
         # first_word here is just message content so if a valid command, it WILL contain the command_prefix
@@ -94,13 +95,10 @@ class Bot(commands.Bot):
         if message.echo or not first_word.startswith("?"):
             return
         
-        with open("commands.yaml", "r") as yamlStream:
-            command_list = yaml.safe_load(yamlStream)
-
-        for item in command_list['commands']:
-            if item['id'] == first_word[1:]:
-                print(item['description'])
-                return   
+        found_command = self.Commands.find_command(first_word)
+        if found_command is not None:
+            print(found_command.description)
+            return        
 
         print("event_message: ", end="")
         print(message.content)
