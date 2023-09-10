@@ -2,13 +2,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from viewer import Viewer
 
+
 class ViewerManager:
     def __init__(self):
         db_file = "sqlite:///database.sqlite3"
-        engine = create_engine(db_file, echo=True)
+        engine = create_engine(db_file, echo=False)
         session_maker = sessionmaker(bind=engine)
         self.Session = session_maker()
-        self.Session.expire_on_commit = False     
+        self.Session.expire_on_commit = False
 
     def __del__(self):
         self.Session.close()
@@ -17,7 +18,7 @@ class ViewerManager:
         print(f"Users found: {users}")
         for user in users:
             new_viewer = self.insert_user_if_not_exists(user.id, user.name)
-            
+
             print(f"Incrementing Point for {user.name}")
             new_viewer.channel_points += 1
             self.Session.query(Viewer).filter(Viewer.twitch_id == user.id).update(
@@ -25,11 +26,13 @@ class ViewerManager:
             )
             self.Session.commit()
 
-    def user_exists_in_db(self, twitch_id):        
-        viewerExists = (self.Session.query(Viewer).filter(Viewer.twitch_id == twitch_id).scalar())
+    def user_exists_in_db(self, twitch_id):
+        viewerExists = (
+            self.Session.query(Viewer).filter(Viewer.twitch_id == twitch_id).scalar()
+        )
         return viewerExists or False
 
-    def insert_user_if_not_exists(self, twitch_id, twitch_name):        
+    def insert_user_if_not_exists(self, twitch_id, twitch_name):
         viewer = self.user_exists_in_db(twitch_id)
         if viewer:
             return viewer
@@ -38,12 +41,11 @@ class ViewerManager:
                 twitch_id=twitch_id,
                 twitch_name=twitch_name,
                 channel_points=0,
-            )            
+            )
         self.Session.add(viewer)
         self.Session.commit()
 
         return viewer
-
 
     def get_points(self, twitch_id):
         user = self.user_exists_in_db(twitch_id)
@@ -51,14 +53,13 @@ class ViewerManager:
             return user.channel_points
         else:
             return False
-        
-    def set_points(self, twitch_id, target_points):        
+
+    def set_points(self, twitch_id, target_points):
         print("Session Created")
         self.Session.query(Viewer).filter(Viewer.twitch_id == twitch_id).update(
             {"channel_points": target_points}
         )
         self.Session.commit()
-
 
     def deduct_points(self, twitch_id, amount):
         user = self.user_exists_in_db(twitch_id)

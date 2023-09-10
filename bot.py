@@ -24,7 +24,7 @@ def str_to_int(strObj: str) -> int:
     if strObj.isdigit():
         return int(strObj, 10)
     else:
-        return 0
+        raise Exception("bad data supplied to str_to_int")
 
 class Bot(commands.Bot):
     def __init__(self):
@@ -69,61 +69,71 @@ class Bot(commands.Bot):
 
     @commands.command()
     async def spend(self, ctx: commands.Context):
-        words = ctx.message.content.split(" ")
-        spend_amount = str_to_int(words[1])
-        user_points = self.ViewerManager.get_points(ctx.author.id)
-        if spend_amount > 0 and user_points >= spend_amount:
-            remaining_points = self.ViewerManager.deduct_points(
-                ctx.author.id, spend_amount
-            )
-            await ctx.send(
-                f"Thanks for the {spend_amount} points, {ctx.author.name}! remaining: {remaining_points}"
-            )
-        else:
+        try:
+            words = ctx.message.content.split(" ")
+            spend_amount = str_to_int(words[1])
+            user_points = self.ViewerManager.get_points(ctx.author.id)
+            if spend_amount > 0 and user_points >= spend_amount:
+                remaining_points = self.ViewerManager.deduct_points(
+                    ctx.author.id, spend_amount
+                )
+                await ctx.send(
+                    f"Thanks for the {spend_amount} points, {ctx.author.name}! remaining: {remaining_points}"
+                )
+            else:
+                return False
+        except Exception as e:
             return False
 
     @commands.command()
     async def diceroll(self, ctx: commands.Context):
-        words = ctx.message.content.split(" ")
-        dice = words[1]
-        dice_words = dice.split("d")
-        dice_amount = str_to_int(dice_words[0])
-        dice_type = str_to_int(dice_words[1])
-        result = 0
-        if (
-            isinstance(dice_amount, int)
-            and isinstance(dice_type, int)
-            and dice_amount >= 1
-            and dice_amount <= 100
-            and dice_type >= 1
-            and dice_type <= 100
-        ):
-            result = random.randint(dice_amount, dice_amount * dice_type)
-        else:
-            return
-        await ctx.send(f"{ctx.author.name} rolled {dice_amount}d{dice_type}: {result}")
+        try:
+            words = ctx.message.content.split(" ")
+            dice = words[1]
+            dice_words = dice.split("d")
+            dice_amount = str_to_int(dice_words[0])
+            dice_type = str_to_int(dice_words[1])
+            result = 0
+            if (
+                isinstance(dice_amount, int)
+                and isinstance(dice_type, int)
+                and dice_amount >= 1
+                and dice_amount <= 100
+                and dice_type >= 1
+                and dice_type <= 100
+            ):
+                result = random.randint(dice_amount, dice_amount * dice_type)
+            else:
+                return
+            await ctx.send(
+                f"{ctx.author.name} rolled {dice_amount}d{dice_type}: {result}"
+            )
+        except Exception as e:
+            return False
 
     @commands.command()
     async def setpoints(self, ctx: commands.Context):
-        if not ctx.author.is_mod:
-            print(f"Non mod {ctx.author.name} tried to use `setpoints`")
-            return
+        try:
+            if not ctx.author.is_mod:
+                print(f"Non mod {ctx.author.name} tried to use `setpoints`")
+                return
 
-        words = ctx.message.content.split(" ")
-        target_user = words[1]
-        target_points = words[2]
+            words = ctx.message.content.split(" ")
+            target_user = words[1]
+            target_points = str_to_int(words[2])
+            print(f"Getting user data for {target_user}")
+            fetched_user_list = await bot.fetch_users(names=[target_user])
+            twitch_id = fetched_user_list[0].id
+            twitch_name = fetched_user_list[0].name
+            print(f"> fetched user.id: {twitch_id}")
+            print(f"> fetched user.name: {twitch_name}")
 
-        print(f"Getting user data for {target_user}")
-        fetched_user_list = await bot.fetch_users(names=[target_user])
-        twitch_id = fetched_user_list[0].id
-        twitch_name = fetched_user_list[0].name
-        print(f"> fetched user.id: {twitch_id}")
-        print(f"> fetched user.name: {twitch_name}")
+            self.ViewerManager.insert_user_if_not_exists(twitch_id, twitch_name)
+            self.ViewerManager.set_points(twitch_id, target_points)
 
-        self.ViewerManager.insert_user_if_not_exists(twitch_id, twitch_name)
-        self.ViewerManager.set_points(twitch_id, target_points)
-
-        await ctx.send(f"Set {target_user}'s points to {target_points}")
+            await ctx.send(f"Set {target_user}'s points to {target_points}")
+        except Exception as e:
+            return False
 
     @commands.command()
     async def repeat(self, ctx: commands.Context):
