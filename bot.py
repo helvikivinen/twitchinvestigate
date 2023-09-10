@@ -1,5 +1,5 @@
 from twitchio.ext import commands, routines
-from twitchio.ext.commands import Command
+
 from twitchio import Channel
 from dotenv import load_dotenv
 from viewermanager import ViewerManager
@@ -20,25 +20,17 @@ commandlist = [
     command_prefix + "spend",
 ]
 
-
-async def noop(ctx):
-    print("noop()")
-    return True
-
-
 def str_to_int(strObj: str) -> int:
     if strObj.isdigit():
         return int(strObj, 10)
     else:
         return 0
 
-
 class Bot(commands.Bot):
     def __init__(self):
         apikey = os.getenv("API_KEY")
         channel_name = os.getenv("CHANNEL_NAME")
-        self.CommandManager = CommandManager()
-        self.ViewerManager = ViewerManager()
+        self.commandManager = CommandManager()
 
         super().__init__(
             token=apikey, prefix=command_prefix, initial_channels=[channel_name]
@@ -49,11 +41,10 @@ class Bot(commands.Bot):
         # We are logged in and ready to chat and use commands...
         print(f"Logged in as | {self.nick}")
         print(f"User ID is | {self.user_id}")
-        self.CommandManager.load_commands()
-        for command in self.CommandManager.commands:
-            if self.add_command(Command(command.id, noop)):
-                print(f"Registering command `{command.id}` with bot:")
-                print(f"> {command.description}")
+
+        for command in self.commandManager.load_commands():
+            bot.add_command(command)
+            print(f"Registering command `{command.name}` with bot")
 
     async def event_message(self, message):
         # first_word here is just message content so if a valid command, it WILL contain the command_prefix

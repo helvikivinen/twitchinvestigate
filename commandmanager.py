@@ -1,6 +1,7 @@
 import yaml
 
-from command import Command
+from command import YamlCommand
+from twitchio.ext.commands import Command
 
 class CommandManager:
 
@@ -8,14 +9,9 @@ class CommandManager:
         with open("commands.yaml", "r") as yamlStream:
             command_list = yaml.safe_load(yamlStream)
 
-        self.commands = []
-
+        commands = []
         for found_command in command_list['commands']:
-            self.commands.append(Command(found_command))
-
-    def find_command(self, input) -> Command | None:
-        for command in self.commands:
-            if command.id == input[1:]:
-                return command
-            
-        return None
+            mapped_command = YamlCommand(found_command)
+            commands.append(Command(mapped_command.id, mapped_command.noop))
+        
+        return commands    
