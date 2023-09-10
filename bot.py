@@ -21,6 +21,8 @@ commandlist = [
     command_prefix + "repeat",
     command_prefix + "setpoints",
     command_prefix + "diceroll",
+    command_prefix + "points",
+    command_prefix + "spend",
 ]
 
 
@@ -62,6 +64,28 @@ def insert_user_if_not_exists(twitch_id, twitch_name):
             session.commit()
 
         return viewer
+
+
+def get_points(twitch_id):
+    user = user_exists_in_db(twitch_id)
+    if user:
+        return user.channel_points
+    else:
+        return False
+
+
+def deduct_points(twitch_id, amount):
+    user = user_exists_in_db(twitch_id)
+    if user:
+        if get_points(twitch_id) >= amount:
+            with Session() as session:
+                user.channel_points -= amount
+                # sanity check that user can't have negative points
+                user.channel_points = max(user.channel_points, 0)
+                session.commit()
+        return user.channel_points
+    else:
+        return False
 
 
 class Bot(commands.Bot):
@@ -107,22 +131,25 @@ class Bot(commands.Bot):
 
     @commands.command()
     async def hello(self, ctx: commands.Context):
-        with Session() as session:
-            print("Session Created")
-            viewerExists = session.query(
-                session.query(Viewer).filter(Viewer.twitch_id == ctx.author.id).exists()
-            ).scalar()
-
-            if not viewerExists:
-                viewer = Viewer(
-                    twitch_id=ctx.author.id,
-                    twitch_name=ctx.author.name,
-                    channel_points=0,
-                )
-                session.add(viewer)
-                session.commit()
-
         await ctx.send(f"Hello {ctx.author.name}!")
+
+    @commands.command()
+    async def points(self, ctx: commands.Context):
+        amount = get_points(ctx.author.id)
+        await ctx.send(f"{ctx.author.name}: {amount} points")
+
+    @commands.command()
+    async def spend(self, ctx: commands.Context):
+        words = ctx.message.content.split(" ")
+        spend_amount = int(words[1])
+        user_points = get_points(ctx.author.id)
+        if spend_amount > 0 and user_points >= spend_amount:
+            remaining_points = deduct_points(ctx.author.id, spend_amount)
+            await ctx.send(
+                f"Thanks for the {spend_amount} points, {ctx.author.name}! remaining: {remaining_points}"
+            )
+        else:
+            return False
 
     @commands.command()
     async def diceroll(self, ctx: commands.Context):
