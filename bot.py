@@ -26,6 +26,13 @@ async def noop(ctx):
     return True
 
 
+def str_to_int(strObj: str) -> int:
+    if strObj.isdigit():
+        return int(strObj, 10)
+    else:
+        return 0
+
+
 class Bot(commands.Bot):
     def __init__(self):
         apikey = os.getenv("API_KEY")
@@ -72,7 +79,7 @@ class Bot(commands.Bot):
     @commands.command()
     async def spend(self, ctx: commands.Context):
         words = ctx.message.content.split(" ")
-        spend_amount = int(words[1])
+        spend_amount = str_to_int(words[1])
         user_points = self.ViewerManager.get_points(ctx.author.id)
         if spend_amount > 0 and user_points >= spend_amount:
             remaining_points = self.ViewerManager.deduct_points(
@@ -89,8 +96,8 @@ class Bot(commands.Bot):
         words = ctx.message.content.split(" ")
         dice = words[1]
         dice_words = dice.split("d")
-        dice_amount = int(dice_words[0])
-        dice_type = int(dice_words[1])
+        dice_amount = str_to_int(dice_words[0])
+        dice_type = str_to_int(dice_words[1])
         result = 0
         if (
             isinstance(dice_amount, int)
