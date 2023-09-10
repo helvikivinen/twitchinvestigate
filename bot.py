@@ -21,71 +21,9 @@ commandlist = [
 ]
 
 
-def IncrementPoints(users):
-    print(f"Users found: {users}")
-    for user in users:
-        new_viewer = insert_user_if_not_exists(user.id, user.name)
-        with Session() as session:
-            print(f"Incrementing Point for {user.name}")
-            new_viewer.channel_points += 1
-            session.query(Viewer).filter(Viewer.twitch_id == user.id).update(
-                {"channel_points": new_viewer.channel_points}
-            )
-            session.commit()
-
-
-def user_exists_in_db(twitch_id):
-    with Session() as session:
-        viewerExists = (
-            session.query(Viewer).filter(Viewer.twitch_id == twitch_id).scalar()
-        )
-
-    return viewerExists or False
-
-
-def insert_user_if_not_exists(twitch_id, twitch_name):
-    with Session() as session:
-        viewer = user_exists_in_db(twitch_id)
-        if viewer:
-            return viewer
-        else:
-            viewer = Viewer(
-                twitch_id=twitch_id,
-                twitch_name=twitch_name,
-                channel_points=0,
-            )
-            session.expire_on_commit = False
-            session.add(viewer)
-            session.commit()
-
-        return viewer
-
-
-def get_points(twitch_id):
-    user = user_exists_in_db(twitch_id)
-    if user:
-        return user.channel_points
-    else:
-        return False
-
-
 async def noop(ctx):
     print("noop()")
     return True
-
-
-def deduct_points(twitch_id, amount):
-    user = user_exists_in_db(twitch_id)
-    if user:
-        if get_points(twitch_id) >= amount:
-            with Session() as session:
-                user.channel_points -= amount
-                # sanity check that user can't have negative points
-                user.channel_points = max(user.channel_points, 0)
-                session.commit()
-        return user.channel_points
-    else:
-        return False
 
 
 class Bot(commands.Bot):
