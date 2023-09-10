@@ -34,7 +34,7 @@ class Bot(commands.Bot):
         channel_name = os.getenv("CHANNEL_NAME")
         self.commandManager = CommandManager()
         self.viewerManager = ViewerManager()
-
+        
         super().__init__(
             token=apikey, prefix=command_prefix, initial_channels=[channel_name]
         )
