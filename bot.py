@@ -20,17 +20,20 @@ commandlist = [
     command_prefix + "spend",
 ]
 
+
 def str_to_int(strObj: str) -> int:
     if strObj.isdigit():
         return int(strObj, 10)
     else:
         raise Exception("bad data supplied to str_to_int")
 
+
 class Bot(commands.Bot):
     def __init__(self):
         apikey = os.getenv("API_KEY")
         channel_name = os.getenv("CHANNEL_NAME")
         self.commandManager = CommandManager()
+        self.viewerManager = ViewerManager()
 
         super().__init__(
             token=apikey, prefix=command_prefix, initial_channels=[channel_name]
@@ -64,7 +67,7 @@ class Bot(commands.Bot):
 
     @commands.command()
     async def points(self, ctx: commands.Context):
-        amount = self.ViewerManager.get_points(ctx.author.id)
+        amount = self.viewerManager.get_points(ctx.author.id)
         await ctx.send(f"{ctx.author.name}: {amount} points")
 
     @commands.command()
@@ -72,9 +75,9 @@ class Bot(commands.Bot):
         try:
             words = ctx.message.content.split(" ")
             spend_amount = str_to_int(words[1])
-            user_points = self.ViewerManager.get_points(ctx.author.id)
+            user_points = self.viewerManager.get_points(ctx.author.id)
             if spend_amount > 0 and user_points >= spend_amount:
-                remaining_points = self.ViewerManager.deduct_points(
+                remaining_points = self.viewerManager.deduct_points(
                     ctx.author.id, spend_amount
                 )
                 await ctx.send(
@@ -128,8 +131,8 @@ class Bot(commands.Bot):
             print(f"> fetched user.id: {twitch_id}")
             print(f"> fetched user.name: {twitch_name}")
 
-            self.ViewerManager.insert_user_if_not_exists(twitch_id, twitch_name)
-            self.ViewerManager.set_points(twitch_id, target_points)
+            self.viewerManager.insert_user_if_not_exists(twitch_id, twitch_name)
+            self.viewerManager.set_points(twitch_id, target_points)
 
             await ctx.send(f"Set {target_user}'s points to {target_points}")
         except Exception as e:
@@ -151,7 +154,7 @@ class Bot(commands.Bot):
             for chatter in chatters:
                 users.append(await chatter.user())
 
-            bot.ViewerManager.increment_points(users)
+            bot.viewerManager.increment_points(users)
 
     point_heartbeat.start()
 
