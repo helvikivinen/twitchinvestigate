@@ -116,13 +116,13 @@ class Bot(commands.Bot):
         # print(f"first_word: {first_word}")
         # print(f"message_content: {message.content}")
 
-        if message.echo or not first_word.startswith("?"):
+        if message.echo or not first_word.startswith(command_prefix):
             return
-        
+
         found_command = self.Commands.find_command(first_word)
         if found_command is not None:
             print(found_command.description)
-            return        
+            return
 
         print("event_message: ", end="")
         print(message.content)
