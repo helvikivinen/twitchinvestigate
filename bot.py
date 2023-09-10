@@ -1,9 +1,9 @@
 from twitchio.ext import commands, routines
+from twitchio.ext.commands import Command
 from twitchio import Channel
 from dotenv import load_dotenv
 from viewermanager import ViewerManager
 from commandmanager import CommandManager
-from viewer import Viewer
 
 import os
 import random
@@ -36,7 +36,7 @@ class Bot(commands.Bot):
         # We are logged in and ready to chat and use commands...
         print(f"Logged in as | {self.nick}")
         print(f"User ID is | {self.user_id}")
-        self.Commands.load_commands()
+        self.CommandManager.load_commands()
 
     async def event_message(self, message):
         # first_word here is just message content so if a valid command, it WILL contain the command_prefix
@@ -123,7 +123,7 @@ class Bot(commands.Bot):
         print(f"> fetched user.name: {twitch_name}")
 
         self.ViewerManager.insert_user_if_not_exists(twitch_id, twitch_name)
-        self.ViewerManager.set_ponts(twitch_id, target_points)
+        self.ViewerManager.set_points(twitch_id, target_points)
         
         await ctx.send(f"Set {target_user}'s points to {target_points}")
 
