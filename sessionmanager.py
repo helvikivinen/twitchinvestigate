@@ -4,7 +4,7 @@ from viewer import Viewer
 from types import SimpleNamespace
 
 
-class ViewerManager:
+class SessionManager:
     def __init__(self):
         db_file = "sqlite:///database.sqlite3"
         engine = create_engine(db_file, echo=False)

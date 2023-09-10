@@ -7,6 +7,6 @@ class BaseCommand(ABC):
         self.cost = yaml_object['cost']
 
     @abstractmethod
-    async def noop(self, ctx):
+    async def run_command(self, ctx):
         print("noop()")
         return True

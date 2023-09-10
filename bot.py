@@ -2,7 +2,7 @@ from twitchio.ext import commands, routines
 
 from twitchio import Channel
 from dotenv import load_dotenv
-from viewermanager import ViewerManager
+from sessionmanager import SessionManager
 from commandmanager import CommandManager
 
 import os
@@ -34,7 +34,7 @@ class Bot(commands.Bot):
         apikey = os.getenv("API_KEY")
         channel_name = os.getenv("CHANNEL_NAME")
         self.commandManager = CommandManager()
-        self.viewerManager = ViewerManager()
+        self.sessionManager = SessionManager()
 
         super().__init__(
             token=apikey, prefix=command_prefix, initial_channels=[channel_name]
@@ -68,12 +68,12 @@ class Bot(commands.Bot):
 
     @commands.command()
     async def points(self, ctx: commands.Context):
-        amount = self.viewerManager.get_points(ctx.author.id)
+        amount = self.sessionManager.get_points(ctx.author.id)
         await ctx.send(f"{ctx.author.name}: {amount} points")
 
     @commands.command()
     async def leaderboard(self, ctx: commands.Context):
-        top_users = self.viewerManager.get_top_users_by_points()
+        top_users = self.sessionManager.get_top_users_by_points()
         user_strings = []
         for user in top_users:
             user_strings.append(f"{user.twitch_name}: {user.channel_points} points")
@@ -86,9 +86,9 @@ class Bot(commands.Bot):
         try:
             words = ctx.message.content.split(" ")
             spend_amount = str_to_int(words[1])
-            user_points = self.viewerManager.get_points(ctx.author.id)
+            user_points = self.sessionManager.get_points(ctx.author.id)
             if spend_amount > 0 and user_points >= spend_amount:
-                remaining_points = self.viewerManager.deduct_points(
+                remaining_points = self.sessionManager.deduct_points(
                     ctx.author.id, spend_amount
                 )
                 await ctx.send(
@@ -142,8 +142,8 @@ class Bot(commands.Bot):
             print(f"> fetched user.id: {twitch_id}")
             print(f"> fetched user.name: {twitch_name}")
 
-            self.viewerManager.insert_user_if_not_exists(twitch_id, twitch_name)
-            self.viewerManager.set_points(twitch_id, target_points)
+            self.sessionManager.insert_user_if_not_exists(twitch_id, twitch_name)
+            self.sessionManager.set_points(twitch_id, target_points)
 
             await ctx.send(f"Set {target_user}'s points to {target_points}")
         except Exception as e:
@@ -165,7 +165,7 @@ class Bot(commands.Bot):
             for chatter in chatters:
                 users.append(await chatter.user())
 
-            bot.viewerManager.increment_points(users)
+            bot.sessionManager.increment_points(users)
 
     point_heartbeat.start()
 

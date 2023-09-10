@@ -18,6 +18,6 @@ class CommandManager:
                     mapped_command = ResponseCommand(found_command)
             
             if mapped_command is not None:
-                commands.append(Command(mapped_command.id, mapped_command.noop))
+                commands.append(Command(mapped_command.id, mapped_command.run_command))
         
         return commands    
