@@ -1,8 +1,8 @@
 ---
 commands:
-- id: hello
-  description: Hello user
-  cost: 0
 - id: cheese
   description: Force feed me cheese
+  cost: 10
+- id: hydrate
+  description: Have a sip!
   cost: 10
