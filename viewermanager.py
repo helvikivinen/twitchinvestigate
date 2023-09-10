@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from viewer import Viewer
+from types import SimpleNamespace
 
 
 class ViewerManager:
@@ -71,3 +72,23 @@ class ViewerManager:
             return user.channel_points
         else:
             return False
+
+    def get_top_users_by_points(self):
+        rows = (
+            self.Session.query(Viewer)
+            .order_by(Viewer.channel_points.desc())
+            .limit(3)
+            .all()
+        )
+        self.Session.commit()
+        top_users = []
+        for row in rows:
+            top_users.append(
+                SimpleNamespace(
+                    **{
+                        "twitch_name": row.twitch_name,
+                        "channel_points": row.channel_points,
+                    }
+                )
+            )
+        return top_users

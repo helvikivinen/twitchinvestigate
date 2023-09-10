@@ -18,6 +18,7 @@ commandlist = [
     command_prefix + "diceroll",
     command_prefix + "points",
     command_prefix + "spend",
+    command_prefix + "leaderboard",
 ]
 
 
@@ -34,7 +35,7 @@ class Bot(commands.Bot):
         channel_name = os.getenv("CHANNEL_NAME")
         self.commandManager = CommandManager()
         self.viewerManager = ViewerManager()
-        
+
         super().__init__(
             token=apikey, prefix=command_prefix, initial_channels=[channel_name]
         )
@@ -69,6 +70,16 @@ class Bot(commands.Bot):
     async def points(self, ctx: commands.Context):
         amount = self.viewerManager.get_points(ctx.author.id)
         await ctx.send(f"{ctx.author.name}: {amount} points")
+
+    @commands.command()
+    async def leaderboard(self, ctx: commands.Context):
+        top_users = self.viewerManager.get_top_users_by_points()
+        user_strings = []
+        for user in top_users:
+            user_strings.append(f"{user.twitch_name}: {user.channel_points} points")
+
+        joined_string = ", ".join(user_strings)
+        await ctx.send(f"Top users by points: {joined_string}")
 
     @commands.command()
     async def spend(self, ctx: commands.Context):
