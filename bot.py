@@ -8,6 +8,7 @@ from viewer import Viewer
 import os
 import viewer
 import random
+import yaml
 
 load_dotenv()
 
@@ -90,8 +91,16 @@ class Bot(commands.Bot):
         # print(f"first_word: {first_word}")
         # print(f"message_content: {message.content}")
 
-        if message.echo or first_word not in commandlist:
+        if message.echo or not first_word.startswith("?"):
             return
+        
+        with open("commands.yaml", "r") as yamlStream:
+            command_list = yaml.safe_load(yamlStream)
+
+        for item in command_list['commands']:
+            if item['id'] == first_word[1:]:
+                print(item['description'])
+                return   
 
         print("event_message: ", end="")
         print(message.content)
