@@ -1,8 +1,8 @@
 import yaml
 
 from twitchio.ext.commands import Command
-from commands.commandtype import CommandType
-from commands.responsecommand import ResponseCommand
+from customcommands.commandtype import CommandType
+from customcommands.responsecommand import ResponseCommand
 
 class CommandManager:
 
