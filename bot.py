@@ -7,6 +7,7 @@ from viewer import Viewer
 
 import os
 import viewer
+import random
 
 load_dotenv()
 
@@ -19,6 +20,7 @@ commandlist = [
     command_prefix + "hello",
     command_prefix + "repeat",
     command_prefix + "setpoints",
+    command_prefix + "diceroll",
 ]
 
 
@@ -37,13 +39,15 @@ def IncrementPoints(users):
 
 def user_exists_in_db(twitch_id):
     with Session() as session:
-        viewerExists = session.query(Viewer).filter(Viewer.twitch_id == twitch_id).scalar()
+        viewerExists = (
+            session.query(Viewer).filter(Viewer.twitch_id == twitch_id).scalar()
+        )
 
     return viewerExists or False
 
 
 def insert_user_if_not_exists(twitch_id, twitch_name):
-    with Session() as session:  
+    with Session() as session:
         viewer = user_exists_in_db(twitch_id)
         if viewer:
             return viewer
@@ -96,7 +100,7 @@ class Bot(commands.Bot):
 
     @commands.command()
     async def hello(self, ctx: commands.Context):
-        with Session() as session:  
+        with Session() as session:
             print("Session Created")
             viewerExists = session.query(
                 session.query(Viewer).filter(Viewer.twitch_id == ctx.author.id).exists()
@@ -112,6 +116,27 @@ class Bot(commands.Bot):
                 session.commit()
 
         await ctx.send(f"Hello {ctx.author.name}!")
+
+    @commands.command()
+    async def diceroll(self, ctx: commands.Context):
+        words = ctx.message.content.split(" ")
+        dice = words[1]
+        dice_words = dice.split("d")
+        dice_amount = int(dice_words[0])
+        dice_type = int(dice_words[1])
+        result = 0
+        if (
+            isinstance(dice_amount, int)
+            and isinstance(dice_type, int)
+            and dice_amount >= 1
+            and dice_amount <= 100
+            and dice_type >= 1
+            and dice_type <= 100
+        ):
+            result = random.randint(dice_amount, dice_amount * dice_type)
+        else:
+            return
+        await ctx.send(f"{ctx.author.name} rolled {dice_amount}d{dice_type}: {result}")
 
     @commands.command()
     async def setpoints(self, ctx: commands.Context):
@@ -132,7 +157,7 @@ class Bot(commands.Bot):
 
         insert_user_if_not_exists(twitch_id=twitch_id, twitch_name=twitch_name)
 
-        with Session() as session:  
+        with Session() as session:
             print("Session Created")
             session.query(Viewer).filter(Viewer.twitch_name == twitch_name).update(
                 {"channel_points": target_points}
