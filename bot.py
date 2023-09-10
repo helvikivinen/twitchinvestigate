@@ -1,8 +1,7 @@
 from twitchio.ext import commands, routines
 from twitchio import Channel
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from viewermanager import ViewerManager
 from commandmanager import CommandManager
 from viewer import Viewer
 
@@ -11,10 +10,6 @@ import random
 
 load_dotenv()
 
-db_file = "sqlite:///database.sqlite3"
-
-engine = create_engine(db_file, echo=True)
-Session = sessionmaker(bind=engine)
 command_prefix = "?"
 commandlist = [
     command_prefix + "hello",
@@ -25,74 +20,12 @@ commandlist = [
     command_prefix + "spend",
 ]
 
-
-def IncrementPoints(users):
-    print(f"Users found: {users}")
-    for user in users:
-        new_viewer = insert_user_if_not_exists(user.id, user.name)
-        with Session() as session:
-            print(f"Incrementing Point for {user.name}")
-            new_viewer.channel_points += 1
-            session.query(Viewer).filter(Viewer.twitch_id == user.id).update(
-                {"channel_points": new_viewer.channel_points}
-            )
-            session.commit()
-
-
-def user_exists_in_db(twitch_id):
-    with Session() as session:
-        viewerExists = (
-            session.query(Viewer).filter(Viewer.twitch_id == twitch_id).scalar()
-        )
-
-    return viewerExists or False
-
-
-def insert_user_if_not_exists(twitch_id, twitch_name):
-    with Session() as session:
-        viewer = user_exists_in_db(twitch_id)
-        if viewer:
-            return viewer
-        else:
-            viewer = Viewer(
-                twitch_id=twitch_id,
-                twitch_name=twitch_name,
-                channel_points=0,
-            )
-            session.expire_on_commit = False
-            session.add(viewer)
-            session.commit()
-
-        return viewer
-
-
-def get_points(twitch_id):
-    user = user_exists_in_db(twitch_id)
-    if user:
-        return user.channel_points
-    else:
-        return False
-
-
-def deduct_points(twitch_id, amount):
-    user = user_exists_in_db(twitch_id)
-    if user:
-        if get_points(twitch_id) >= amount:
-            with Session() as session:
-                user.channel_points -= amount
-                # sanity check that user can't have negative points
-                user.channel_points = max(user.channel_points, 0)
-                session.commit()
-        return user.channel_points
-    else:
-        return False
-
-
 class Bot(commands.Bot):
     def __init__(self):
         apikey = os.getenv("API_KEY")
         channel_name = os.getenv("CHANNEL_NAME")
-        self.Commands = CommandManager()
+        self.CommandManager = CommandManager()
+        self.ViewerManager = ViewerManager()
 
         super().__init__(
             token=apikey, prefix=command_prefix, initial_channels=[channel_name]
@@ -118,8 +51,8 @@ class Bot(commands.Bot):
 
         if message.echo or not first_word.startswith(command_prefix):
             return
-
-        found_command = self.Commands.find_command(first_word)
+        
+        found_command = self.CommandManager.find_command(first_word)
         if found_command is not None:
             print(found_command.description)
             return
@@ -135,16 +68,16 @@ class Bot(commands.Bot):
 
     @commands.command()
     async def points(self, ctx: commands.Context):
-        amount = get_points(ctx.author.id)
+        amount = self.ViewerManager.get_points(ctx.author.id)
         await ctx.send(f"{ctx.author.name}: {amount} points")
 
     @commands.command()
     async def spend(self, ctx: commands.Context):
         words = ctx.message.content.split(" ")
         spend_amount = int(words[1])
-        user_points = get_points(ctx.author.id)
+        user_points = self.ViewerManager.get_points(ctx.author.id)
         if spend_amount > 0 and user_points >= spend_amount:
-            remaining_points = deduct_points(ctx.author.id, spend_amount)
+            remaining_points = self.ViewerManager.deduct_points(ctx.author.id, spend_amount)
             await ctx.send(
                 f"Thanks for the {spend_amount} points, {ctx.author.name}! remaining: {remaining_points}"
             )
@@ -189,14 +122,9 @@ class Bot(commands.Bot):
         print(f"> fetched user.id: {twitch_id}")
         print(f"> fetched user.name: {twitch_name}")
 
-        insert_user_if_not_exists(twitch_id=twitch_id, twitch_name=twitch_name)
-
-        with Session() as session:
-            print("Session Created")
-            session.query(Viewer).filter(Viewer.twitch_name == twitch_name).update(
-                {"channel_points": target_points}
-            )
-            result = session.commit()
+        self.ViewerManager.insert_user_if_not_exists(twitch_id, twitch_name)
+        self.ViewerManager.set_ponts(twitch_id, target_points)
+        
         await ctx.send(f"Set {target_user}'s points to {target_points}")
 
     @commands.command()
@@ -215,7 +143,7 @@ class Bot(commands.Bot):
             for chatter in chatters:
                 users.append(await chatter.user())
 
-            IncrementPoints(users)
+            bot.ViewerManager.increment_points(users)
 
     point_heartbeat.start()
 
