@@ -48,15 +48,16 @@ def insert_user_if_not_exists(twitch_id, twitch_name):
         if viewer:
             return viewer
         else:
-            new_viewer = Viewer(
+            viewer = Viewer(
                 twitch_id=twitch_id,
                 twitch_name=twitch_name,
                 channel_points=0,
             )
-            session.add(new_viewer)
+            session.expire_on_commit = False
+            session.add(viewer)
             session.commit()
 
-            return new_viewer
+        return viewer
 
 
 class Bot(commands.Bot):
