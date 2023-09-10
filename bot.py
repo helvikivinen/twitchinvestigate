@@ -147,7 +147,7 @@ class Bot(commands.Bot):
 
     # this runs as an async background task and not a memebr of the bot
     @routines.routine(seconds=30)
-    async def get_points():
+    async def point_heartbeat():
         # get the global bot object, this is equivalent to 'self'
         if bot._connection.is_alive:
             channel_name = os.getenv("CHANNEL_NAME")
@@ -158,7 +158,7 @@ class Bot(commands.Bot):
 
             IncrementPoints(users)
 
-    get_points.start()
+    point_heartbeat.start()
 
 
 bot = Bot()
