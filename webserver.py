@@ -1,5 +1,17 @@
 from bottle import Bottle
+from bottle import template
 from sessionmanager import SessionManager
+
+command_prefix = "?"
+commandlist = [
+    command_prefix + "hello",
+    command_prefix + "repeat",
+    command_prefix + "setpoints",
+    command_prefix + "diceroll",
+    command_prefix + "points",
+    command_prefix + "spend",
+    command_prefix + "leaderboard",
+]
 
 
 class MyHttpServer(Bottle):
@@ -12,7 +24,13 @@ class MyHttpServer(Bottle):
         self.route("/leaderboard", callback=self.leaderboard)
 
     def index(self):
-        return "index page"
+        index_page = open("webpages/index.html", "r")
+        command_list_items = []
+        for command in commandlist:
+            command_list_items += ["<li>{}</li>".format(command)]
+        full_commands = "".join(command_list_items)
+        print(full_commands)
+        return template(index_page.read(), command_list_items=full_commands)
 
     def hello(self):
         return "hello, world"
