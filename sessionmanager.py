@@ -1,4 +1,6 @@
-from sqlalchemy import create_engine
+import os
+from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine
+import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 from viewer import Viewer
 from types import SimpleNamespace
@@ -6,8 +8,22 @@ from types import SimpleNamespace
 
 class SessionManager:
     def __init__(self):
+        if not os.path.isfile('database.sqlite3'):
+            with open('database.sqlite3', 'w'): pass
+
         db_file = "sqlite:///database.sqlite3"
         engine = create_engine(db_file, echo=False)
+
+        if not sqlalchemy.inspect(engine).has_table("viewers"):
+            meta_data = MetaData()
+            viewers = Table('viewers', meta_data, 
+                  Column('id', Integer, primary_key=True, nullable=False),
+                  Column('twitch_id', Integer),
+                  Column('twitch_name', String),
+                  Column('channel_points', Integer),
+                  )
+            viewers.create(engine)
+        
         session_maker = sessionmaker(bind=engine)
         self.Session = session_maker()
         self.Session.expire_on_commit = False
