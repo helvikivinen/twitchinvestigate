@@ -3,8 +3,27 @@ commands:
 - id: cheese
   description: Force feed me cheese
   cost: 10
-  type: 1
+  steps:
+    - type: PrintStep
+      message: 'eat, skelly'
+    - type: PrintStep
+      message: 'teehee'
+
 - id: hydrate
   description: Have a sip!
   cost: 10
-  type: 1
+  steps:
+    - type: PrintStep
+      message: 'drink, skelly'
+    - type: PrintStep
+      message: 'teehee'
+
+- id: random
+  description: Random Number!
+  cost: 10
+  steps:
+    - type: RandomNumber
+      max: 10
+      min: 0
+    - type: PrintStep
+      message: 'Hello Everynyan this is a number %randomNumber%. %date%'

@@ -2,3 +2,4 @@ python-dotenv
 sqlalchemy
 twitchio
 bottle
+pyyaml
