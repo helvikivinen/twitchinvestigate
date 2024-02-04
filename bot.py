@@ -71,6 +71,11 @@ class Bot(commands.Bot):
 
         await self.handle_commands(message)
 
+    @commands.command(name="commands")
+    async def show_commands(self, ctx: commands.Context):
+        commands = ", ".join(commandlist)
+        await ctx.send(commands)
+
     @commands.command()
     async def hello(self, ctx: commands.Context):
         await ctx.send(f"Hello {ctx.author.name}!")
