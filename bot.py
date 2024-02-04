@@ -4,9 +4,12 @@ from twitchio import Channel
 from dotenv import load_dotenv
 from sessionmanager import SessionManager
 from commandmanager import CommandManager
+from threading import Thread
+from webserver import MyHttpServer
 
 import os
 import random
+
 
 load_dotenv()
 
@@ -22,6 +25,7 @@ commandlist = [
 ]
 
 
+# TODO: https://stackoverflow.com/questions/54680187/weird-behavoir-with-casting-int
 def str_to_int(strObj: str) -> int:
     if strObj.isdigit():
         return int(strObj, 10)
@@ -35,6 +39,11 @@ class Bot(commands.Bot):
         channel_name = os.getenv("CHANNEL_NAME")
         self.commandManager = CommandManager()
         self.sessionManager = SessionManager()
+        self.webserver = MyHttpServer()
+
+        # Start Bottle HTTP wrapper as separate thread
+        thread = Thread(target=self.webserver.run_server)
+        thread.start()
 
         super().__init__(
             token=apikey, prefix=command_prefix, initial_channels=[channel_name]
